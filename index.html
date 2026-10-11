@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Novelinhas de IA</title>
+    <!-- Tailwind CSS para um design moderno e responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Ocultar barra de rolagem mantendo a funcionalidade */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-black text-white flex justify-center items-center min-h-screen">
+
+    <!-- Container principal simulando a tela de um smartphone -->
+    <div class="w-full max-w-md h-[100dvh] md:h-[850px] md:rounded-3xl bg-neutral-950 flex flex-col relative overflow-hidden shadow-2xl border border-neutral-800">
+
+        <!-- Topo / Cabeçalho -->
+        <header class="absolute top-0 left-0 right-0 z-20 flex justify-between items-center p-4 bg-gradient-to-b from-black/80 to-transparent">
+            <h1 class="text-lg font-bold tracking-wider bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">AI NOVELS</h1>
+            <button onclick="toggleAdminModal()" class="bg-neutral-800/80 hover:bg-neutral-700 text-white p-2 rounded-full backdrop-blur-md transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Feed de Vídeos (Formato Vertical / Stories/Reels) -->
+        <main id="feed-container" class="flex-1 overflow-y-auto snap-y snap-mandatory no-scrollbar flex flex-col">
+            <!-- Os cards de vídeo serão injetados dinamicamente aqui via JavaScript -->
+        </main>
+
+        <!-- Modal de Postagem (Painel Privado) -->
+        <div id="admin-modal" class="absolute inset-0 z-30 bg-black/90 backdrop-blur-lg flex flex-col justify-center p-6 translate-y-full transition-transform duration-300">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Publicar Nova Cena</h2>
+                <button onclick="toggleAdminModal()" class="text-neutral-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <form id="upload-form" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs uppercase text-neutral-400 mb-1">Título do Episódio / Cena</label>
+                    <input type="text" id="post-title" required placeholder="Ex: Capítulo 1 - O Despertar" class="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-neutral-400 mb-1">Selecionar Vídeo da Galeria</label>
+                    <input type="file" id="post-file" accept="video/*" required class="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-sm text-neutral-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-neutral-400 mb-1">Legenda / Roteiro Rápido</label>
+                    <textarea id="post-caption" rows="3" placeholder="O que acontece nesta cena..." class="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500 resize-none"></textarea>
+                </div>
+                <button type="submit" class="mt-2 w-full bg-gradient-to-r from-purple-600 to-pink-600 font-bold py-3 rounded-xl shadow-lg hover:opacity-90 transition">Publicar na Minha Rede</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script de Funcionamento -->
+    <script>
+        // Banco de dados local (pode salvar posts de exemplo iniciais)
+        let posts = JSON.parse(localStorage.getItem('ai_novels_posts')) || [
+            {
+                id: 1,
+                title: "Episódio 1: A Chegada",
+                src: "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-screens-and-numbers-31910-large.mp4",
+                caption: "Criado com Runway e Midjourney. O início de uma jornada cibernética."
+            }
+        ];
+
+        const feedContainer = document.getElementById('feed-container');
+        const adminModal = document.getElementById('admin-modal');
+        const uploadForm = document.getElementById('upload-form');
+
+        // Renderizar o feed
+        function renderFeed() {
+            feedContainer.innerHTML = '';
+            posts.forEach((post, index) => {
+                const itemHTML = `
+                    <div class="w-full h-full snap-start relative flex-shrink-0 flex items-center justify-center bg-black">
+                        <!-- Vídeo em loop -->
+                        <video src="${post.src}" class="w-full h-full object-cover" autoplay loop muted playsinline onclick="togglePlay(this)"></video>
+                        
+                        <!-- Gradiente de sobreposição para leitura da legenda -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none"></div>
+
+                        <!-- Informações do post -->
+                        <div class="absolute bottom-6 left-4 right-4 z-10 pointer-events-auto">
+                            <span class="bg-purple-600/80 text-xs font-semibold px-2.5 py-1 rounded-md uppercase tracking-wider backdrop-blur-sm">${post.title}</span>
+                            <p class="text-sm text-neutral-200 mt-2 line-clamp-3">${post.caption}</p>
+                        </div>
+                    </div>
+                `;
+                feedContainer.innerHTML += itemHTML;
+            });
+        }
+
+        // Abrir/Fechar painel de postagem
+        function toggleAdminModal() {
+            adminModal.classList.toggle('translate-y-full');
+        }
+
+        // Play/Pause ao tocar no vídeo
+        function togglePlay(videoElement) {
+            if (videoElement.paused) {
+                videoElement.play();
+            } else {
+                videoElement.pause();
+            }
+        }
+
+        // Processar envio de novo vídeo da galeria
+        uploadForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('post-title').value;
+            const caption = document.getElementById('post-caption').value;
+            const fileInput = document.getElementById('post-file');
+
+            const file = fileInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const newPost = {
+                        id: Date.now(),
+                        title,
+                        src: event.target.result,
+                        caption
+                    };
+                    posts.unshift(newPost); // Adiciona no topo
+                    localStorage.setItem('ai_novels_posts', JSON.stringify(posts));
+                    renderFeed();
+                    uploadForm.reset();
+                    toggleAdminModal();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Inicializar
+        renderFeed();
+    </script>
+</body>
+</html>
